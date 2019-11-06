@@ -27,10 +27,9 @@ from kivy.core.window import Window
 from pidev.kivy import DPEAButton
 from pidev.kivy import PauseScreen
 from time import sleep
-import RPi.GPIO as GPIO 
+import RPi.GPIO as GPIO
 from pidev.stepper import stepper
 from pidev.Cyprus_Commands import Cyprus_Commands_RPi as cyprus
-
 
 # ////////////////////////////////////////////////////////////////
 # //                      GLOBAL VARIABLES                      //
@@ -63,8 +62,9 @@ class MyApp(App):
         self.title = "Robotic Arm"
         return sm
 
+
 Builder.load_file('main.kv')
-Window.clearcolor = (.1, .1, .1, 1) # (WHITE)
+Window.clearcolor = (.1, .1, .1, 1)  # (WHITE)
 
 cyprus.open_spi()
 
@@ -73,17 +73,20 @@ cyprus.open_spi()
 # ////////////////////////////////////////////////////////////////
 
 sm = ScreenManager()
-arm = stepper(port = 0, speed = 10)
+arm = stepper(port=0, speed=10)
+
 
 # ////////////////////////////////////////////////////////////////
 # //                       MAIN FUNCTIONS                       //
 # //             SHOULD INTERACT DIRECTLY WITH HARDWARE         //
 # ////////////////////////////////////////////////////////////////
-	
+
 class MainScreen(Screen):
     version = cyprus.read_firmware_version()
     armPosition = 0
     lastClick = time.clock()
+    armHeight = False
+    magnet = False
 
     def __init__(self, **kwargs):
         super(MainScreen, self).__init__(**kwargs)
@@ -98,36 +101,84 @@ class MainScreen(Screen):
         return processInput
 
     def toggleArm(self):
+        self.armHeight = not self.armHeight
+        if self.armHeight:
+            cyprus.set_pwm_values(1, period_value=100000,
+                                  compare_value=50000, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+        else:
+            cyprus.set_pwm_values(1, period_value=100000,
+                                  compare_value=0, compare_mode=cyprus.LESS_THAN_OR_EQUAL)
         print("Process arm movement here")
 
     def toggleMagnet(self):
+        self.magnet = not self.magnet
+        if self.magnet:
+            cyprus.set_servo_position(2, 1)
+        else:
+            cyprus.set_servo_position(2, .5)
         print("Process magnet here")
-        
+
     def auto(self):
+        x = -13.
+        y = -21.
+        if self.isBallOnShortTower():
+            x = -21.
+            y = -13.
+
+        arm.home(1)
+        arm.go_to_position(x)
+        self.toggleMagnet()
+        time.sleep(.5)
+        self.toggleArm()
+        time.sleep(1)
+        self.toggleArm()
+        arm.go_to_position(y)
+        time.sleep(.5)
+        self.toggleArm()
+        time.sleep(.5)
+        self.toggleMagnet()
+        time.sleep(.5)
+        self.toggleArm()
+        arm.home(1)
+
         print("Run the arm automatically here")
 
     def setArmPosition(self, position):
+        if(arm.get_position_in_units() == 0):
+            self.ids.moveArm.value = 0
+        self.ids.armControlLabel.text = str((position + 100)/2)
+        arm.go_to_position(position * .5)
+
+        print(arm.get_position_in_units())
         print("Move arm here")
 
     def homeArm(self):
-        arm.home(self.homeDirection)
-        
+        arm.home(0)
+
     def isBallOnTallTower(self):
+        print("Determine if ball is on the top tower")
         if cyprus.read_gpio() and 0b0001:
             print("proxim sensor on")
+            return True
         else:
             print("this ain't it chief")
-        print("Determine if ball is on the top tower")
+            return False
 
     def isBallOnShortTower(self):
+        print("Determine if ball is on the bottom tower")
         if cyprus.read_gpio() and 0b0010:
             print("proxim sensor on")
+            return True
         else:
             print("this ain't it chief")
-        print("Determine if ball is on the bottom tower")
-        
+            return False
+
     def initialize(self):
         cyprus.initialize()
+        cyprus.setup_servo(1)
+        cyprus.setup_servo(2)
+        cyprus.set_servo_position(2, .5)
+        self.homeArm()
         print("Home arm and turn off magnet")
 
     def resetColors(self):
@@ -137,9 +188,9 @@ class MainScreen(Screen):
 
     def quit(self):
         MyApp().stop()
-    
-sm.add_widget(MainScreen(name = 'main'))
 
+
+sm.add_widget(MainScreen(name='main'))
 
 # ////////////////////////////////////////////////////////////////
 # //                          RUN APP                           //
