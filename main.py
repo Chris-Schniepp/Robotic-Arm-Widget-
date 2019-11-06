@@ -64,7 +64,7 @@ class MyApp(App):
         return sm
 
 Builder.load_file('main.kv')
-Window.clearcolor = (.1, .1,.1, 1) # (WHITE)
+Window.clearcolor = (.1, .1, .1, 1) # (WHITE)
 
 cyprus.open_spi()
 
@@ -113,12 +113,21 @@ class MainScreen(Screen):
         arm.home(self.homeDirection)
         
     def isBallOnTallTower(self):
+        if cyprus.read_gpio() and 0b0001:
+            print("proxim sensor on")
+        else:
+            print("this ain't it chief")
         print("Determine if ball is on the top tower")
 
     def isBallOnShortTower(self):
+        if cyprus.read_gpio() and 0b0010:
+            print("proxim sensor on")
+        else:
+            print("this ain't it chief")
         print("Determine if ball is on the bottom tower")
         
     def initialize(self):
+        cyprus.initialize()
         print("Home arm and turn off magnet")
 
     def resetColors(self):
