@@ -119,26 +119,30 @@ class MainScreen(Screen):
         print("Process magnet here")
 
     def auto(self):
-        x = -13.
-        y = -21.
-        if self.isBallOnShortTower():
-            x = -21.
-            y = -13.
+        x = -21
+        y = -12.75
+        if self.isBallOnTallTower():
+            x = -12.75
+            y = -21
 
         arm.home(1)
+        cyprus.set_servo_position(2, .5)
+
         arm.go_to_position(x)
         self.toggleMagnet()
         time.sleep(.5)
         self.toggleArm()
         time.sleep(1)
         self.toggleArm()
+        time.sleep(.5)
         arm.go_to_position(y)
         time.sleep(.5)
         self.toggleArm()
-        time.sleep(.5)
+        time.sleep(.7)
         self.toggleMagnet()
         time.sleep(.5)
         self.toggleArm()
+        time.sleep(.5)
         arm.home(1)
 
         print("Run the arm automatically here")
@@ -157,21 +161,23 @@ class MainScreen(Screen):
 
     def isBallOnTallTower(self):
         print("Determine if ball is on the top tower")
-        if cyprus.read_gpio() and 0b0001:
-            print("proxim sensor on")
-            return True
-        else:
-            print("this ain't it chief")
-            return False
+        if cyprus.read_gpio() & 0b0001:
+            sleep(.05)
+            if cyprus.read_gpio() & 0b0001:
+                print("proxim sensor off")
+                return False
+
+        return True
+
 
     def isBallOnShortTower(self):
         print("Determine if ball is on the bottom tower")
-        if cyprus.read_gpio() and 0b0010:
-            print("proxim sensor on")
-            return True
-        else:
+        if cyprus.read_gpio() & 0B0010:
             print("this ain't it chief")
             return False
+        print("it is")
+        return True
+
 
     def initialize(self):
         cyprus.initialize()
