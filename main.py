@@ -119,14 +119,13 @@ class MainScreen(Screen):
         print("Process magnet here")
 
     def auto(self):
-        x = -21
+        x = -21.1
         y = -12.75
         if self.isBallOnTallTower():
             x = -12.75
-            y = -21
+            y = -21.1
 
         arm.home(1)
-        cyprus.set_servo_position(2, .5)
 
         arm.go_to_position(x)
         self.toggleMagnet()
@@ -148,10 +147,10 @@ class MainScreen(Screen):
         print("Run the arm automatically here")
 
     def setArmPosition(self, position):
-        if(arm.get_position_in_units() == 0):
+        if arm.get_position_in_units() == 0:
             self.ids.moveArm.value = 0
-        self.ids.armControlLabel.text = str((position + 100)/2)
-        arm.go_to_position(position * .5)
+        self.ids.armControlLabel.text = str(position)
+        arm.go_to_position(position)
 
         print(arm.get_position_in_units())
         print("Move arm here")
